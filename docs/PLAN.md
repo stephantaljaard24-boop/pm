@@ -7,6 +7,8 @@
 - Frontend: Next.js app renders immediately from seeded `initialData`, fetches backend board in the background, and persists edits via a `saveBoard` API wrapper. Column title edits use a draft input and commit on blur/Enter to make saves deterministic.
 - Testing: Unit tests (Vitest) updated and passing. Playwright E2E added for persistence; the persistence spec now uses Playwright `request` to PUT an updated board and then asserts the UI reads the persisted state.
 - Container build fix: `backend/Containerfile` updated to copy `backend/app` before running `pip install --editable .` to prevent build failures.
+- AI connectivity: Backend OpenRouter client added with a debug endpoint at `/api/ai/test`; start scripts now pass `.env` into Podman so the container can read `OPENROUTER_API_KEY`. Mocked backend tests pass and a manual live 2 + 2 check returned `4`.
+- Board-aware AI: Backend endpoint added at `/api/ai/board/{user_id}`. It sends the current board plus user message/history to OpenRouter, requires a structured JSON response, validates optional board updates before saving, and rejects malformed AI output without changing persisted board state.
 
 These decisions are implemented in the repository and validated locally: the backend serves API and built frontend on http://localhost:8000 when the `pm-mvp` image is run.
 
@@ -172,13 +174,13 @@ Connect the frontend to the backend so the board is persistent rather than purel
 Add a working OpenRouter-based backend integration for AI requests.
 
 ### Checklist
-- [ ] Add the OpenRouter client configuration and environment handling
-- [ ] Verify the backend can make a simple AI request such as a 2 + 2 test
-- [ ] Keep the initial AI integration isolated and easy to test
+- [x] Add the OpenRouter client configuration and environment handling
+- [x] Verify the backend can make a simple AI request such as a 2 + 2 test
+- [x] Keep the initial AI integration isolated and easy to test
 
 ### Tests
-- [ ] Verify a simple request succeeds with the configured model and API key
-- [ ] Verify errors are surfaced clearly when the API key or network path is misconfigured
+- [x] Verify a simple request succeeds with the configured model and API key
+- [x] Verify errors are surfaced clearly when the API key or network path is misconfigured
 
 ### Success criteria
 - The backend can successfully call the configured AI model through OpenRouter
@@ -192,15 +194,15 @@ Add a working OpenRouter-based backend integration for AI requests.
 Allow the AI to understand the current board and optionally propose changes to it.
 
 ### Checklist
-- [ ] Send the current board JSON plus the user question and any conversation history to the AI
-- [ ] Require the AI response to use a structured output schema with a text reply and optional board updates
-- [ ] Validate and apply safe board updates from the AI response
-- [ ] Add thorough tests for normal and edge-case AI responses
+- [x] Send the current board JSON plus the user question and any conversation history to the AI
+- [x] Require the AI response to use a structured output schema with a text reply and optional board updates
+- [x] Validate and apply safe board updates from the AI response
+- [x] Add thorough tests for normal and edge-case AI responses
 
 ### Tests
-- [ ] Verify a simple prompt returns a structured response
-- [ ] Verify valid board updates are applied correctly
-- [ ] Verify invalid or malformed AI output is handled safely
+- [x] Verify a simple prompt returns a structured response
+- [x] Verify valid board updates are applied correctly
+- [x] Verify invalid or malformed AI output is handled safely
 
 ### Success criteria
 - The AI can answer user requests while optionally modifying the board

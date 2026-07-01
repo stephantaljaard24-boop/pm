@@ -4,8 +4,15 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
+from app.ai_client import (
+    OPENROUTER_MODEL,
+    OpenRouterConfigError,
+    OpenRouterRequestError,
+    ask_openrouter,
+)
+from app.board_ai import AIResponseValidationError, ask_board_ai
 from app.persistence import get_board_data, save_board_data
-from app.schemas import BoardPayload
+from app.schemas import AIBoardRequest, BoardPayload
 
 app = FastAPI(title="Project Management MVP Backend")
 
@@ -23,6 +30,18 @@ def health_check() -> JSONResponse:
     return JSONResponse({"status": "ok", "service": "pm-backend"})
 
 
+@app.get("/api/ai/test")
+def test_ai_connection() -> JSONResponse:
+    try:
+        answer = ask_openrouter("What is 2 + 2? Reply with only the number.")
+    except OpenRouterConfigError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=500)
+    except OpenRouterRequestError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
+
+    return JSONResponse({"status": "ok", "model": OPENROUTER_MODEL, "answer": answer})
+
+
 @app.get("/api/board/{user_id}")
 def get_board(user_id: str) -> JSONResponse:
     board = get_board_data(user_id)
@@ -33,6 +52,27 @@ def get_board(user_id: str) -> JSONResponse:
 def put_board(user_id: str, payload: BoardPayload) -> JSONResponse:
     save_board_data(user_id, payload.model_dump())
     return JSONResponse(payload.model_dump())
+
+
+@app.post("/api/ai/board/{user_id}")
+def chat_with_board_ai(user_id: str, payload: AIBoardRequest) -> JSONResponse:
+    board = get_board_data(user_id)
+
+    try:
+        ai_response = ask_board_ai(payload.message, board, payload.history)
+    except OpenRouterConfigError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=500)
+    except OpenRouterRequestError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
+    except AIResponseValidationError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
+
+    updated_board = None
+    if ai_response.board is not None:
+        updated_board = ai_response.board.model_dump()
+        save_board_data(user_id, updated_board)
+
+    return JSONResponse({"reply": ai_response.reply, "board": updated_board})
 
 
 @app.get("/", response_model=None)
