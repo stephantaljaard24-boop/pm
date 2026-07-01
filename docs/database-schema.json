@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "description": "SQLite schema proposal for the Project Management MVP Kanban board",
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "username": "TEXT NOT NULL UNIQUE",
+        "password_hash": "TEXT NOT NULL",
+        "created_at": "TEXT NOT NULL"
+      }
+    },
+    "boards": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "user_id": "INTEGER NOT NULL REFERENCES users(id)",
+        "name": "TEXT NOT NULL DEFAULT 'Main Board'",
+        "created_at": "TEXT NOT NULL"
+      }
+    },
+    "columns": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "board_id": "INTEGER NOT NULL REFERENCES boards(id)",
+        "external_id": "TEXT NOT NULL",
+        "title": "TEXT NOT NULL",
+        "position": "INTEGER NOT NULL"
+      }
+    },
+    "cards": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "board_id": "INTEGER NOT NULL REFERENCES boards(id)",
+        "external_id": "TEXT NOT NULL",
+        "title": "TEXT NOT NULL",
+        "details": "TEXT NOT NULL DEFAULT ''",
+        "column_id": "INTEGER NOT NULL REFERENCES columns(id)",
+        "position": "INTEGER NOT NULL"
+      }
+    }
+  },
+  "notes": [
+    "The MVP uses a single board per user and a single fixed set of columns that can be renamed.",
+    "The schema is intentionally simple so it can evolve to multiple boards and richer metadata later.",
+    "The external_id fields mirror the frontend card and column IDs for straightforward synchronization."
+  ]
+}
