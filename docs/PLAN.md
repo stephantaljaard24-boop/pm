@@ -9,25 +9,26 @@
 - Container build fix: `backend/Containerfile` updated to copy `backend/app` before running `pip install --editable .` to prevent build failures.
 - AI connectivity: Backend OpenRouter client added with a debug endpoint at `/api/ai/test`; start scripts now pass `.env` into Podman so the container can read `OPENROUTER_API_KEY`. Mocked backend tests pass and a manual live 2 + 2 check returned `4`.
 - Board-aware AI: Backend endpoint added at `/api/ai/board/{user_id}`. It sends the current board plus user message/history to OpenRouter, requires a structured JSON response, validates optional board updates before saving, and rejects malformed AI output without changing persisted board state.
+- AI chat sidebar: Frontend sidebar added to the board workspace. It sends chat prompts to the board-aware AI endpoint, displays the conversation, applies AI-generated board updates, and shows a clear error when the AI request fails.
 
 These decisions are implemented in the repository and validated locally: the backend serves API and built frontend on http://localhost:8000 when the `pm-mvp` image is run.
 
 ## Part 1: Plan and project baseline
 
-This phase is documentation-only. The goal is to lock in the implementation sequence, define clear checkpoints, and capture the current frontend architecture so later work can build on it safely.
+This phase is documentation-only. It locked in the implementation sequence, defined clear checkpoints, and captured the current frontend architecture so later work could build on it safely.
 
 ### Checklist
 - [x] Review the product requirements in [AGENTS.md](../AGENTS.md)
 - [x] Review the existing frontend MVP in [frontend](../frontend)
 - [x] Confirm the local deployment target is Podman rather than Docker
-- [ ] Expand this plan into a detailed implementation checklist for each later phase
-- [ ] Create a frontend guidance file describing the current app structure and test setup
-- [ ] Present the completed plan for user review before moving to implementation
+- [x] Expand this plan into a detailed implementation checklist for each later phase
+- [x] Create a frontend guidance file describing the current app structure and test setup
+- [x] Present the completed plan for user review before moving to implementation
 
 ### Deliverables
-- [ ] A detailed plan for Parts 2 through 10, with step-by-step checklists
-- [ ] A frontend-specific AGENTS document covering the current architecture, key files, and how to run tests
-- [ ] A clear review point so the user can approve the approach before coding starts
+- [x] A detailed plan for Parts 2 through 10, with step-by-step checklists
+- [x] A frontend-specific AGENTS document covering the current architecture, key files, and how to run tests
+- [x] A clear review point so the user can approve the approach before coding starts
 
 ### Success criteria
 - The plan is specific enough that the next implementation step can start without major ambiguity
@@ -49,9 +50,9 @@ Create the local containerized foundation so the app can run in Podman and expos
 - [x] Verify that the app serves a basic hello-world response locally and that the API route responds correctly
 
 ### Tests
-- [ ] Run the container locally and confirm the app starts without errors
-- [ ] Verify the root route returns the expected static content
-- [ ] Verify the API endpoint returns a successful JSON response
+- [x] Run the container locally and confirm the app starts without errors
+- [x] Verify the root route returns the expected static content
+- [x] Verify the API endpoint returns a successful JSON response
 
 ### Success criteria
 - The app can be started and stopped locally with the provided scripts
@@ -71,9 +72,9 @@ Make the existing Kanban demo the actual application experience served at the ro
 - [x] Add or refine unit and integration tests around board rendering and core interactions
 
 ### Tests
-- [ ] Run frontend unit tests for the Kanban logic and UI components
-- [ ] Run the browser-based integration suite for the board experience
-- [ ] Confirm the app renders the board when served through the full stack
+- [x] Run frontend unit tests for the Kanban logic and UI components
+- [x] Run the browser-based integration suite for the board experience
+- [x] Confirm the app renders the board when served through the full stack
 
 ### Success criteria
 - The production build serves the board successfully at the root route
@@ -93,9 +94,9 @@ Add a basic authentication gate so the user must log in before seeing the board.
 - [x] Cover sign-in, access control, and logout with tests
 
 ### Tests
-- [ ] Verify that unauthenticated visitors are redirected or blocked from the board
-- [ ] Verify that valid credentials unlock the board
-- [ ] Verify that logging out returns the user to the sign-in state
+- [x] Verify that unauthenticated visitors are redirected or blocked from the board
+- [x] Verify that valid credentials unlock the board
+- [x] Verify that logging out returns the user to the sign-in state
 
 ### Success criteria
 - The board is inaccessible without authentication
@@ -112,7 +113,7 @@ Define the data model for a multi-user-capable Kanban board and document the app
 - [x] Propose a SQLite-friendly schema for users, boards, columns, and cards
 - [x] Save the schema definition as JSON in the documentation folder
 - [x] Document how the schema will support future multi-user growth while staying simple for the MVP
-- [ ] Present the schema proposal to the user for approval
+- [x] Present the schema proposal to the user for approval
 
 ### Tests
 - [x] Validate that the proposed JSON schema is internally consistent
@@ -136,9 +137,9 @@ Add backend routes to read and mutate the Kanban board for a signed-in user and 
 - [x] Add backend unit tests for the main persistence flows
 
 ### Tests
-- [ ] Verify the database is created automatically when missing
-- [ ] Verify reads and writes work correctly through the API layer
-- [ ] Verify invalid or empty data is handled safely
+- [x] Verify the database is created automatically when missing
+- [x] Verify reads and writes work correctly through the API layer
+- [x] Verify invalid or empty data is handled safely
 
 ### Success criteria
 - The backend can persist Kanban state without manual database setup
@@ -153,14 +154,14 @@ Connect the frontend to the backend so the board is persistent rather than purel
 
 ### Checklist
 - [x] Replace the current in-memory board state with backend-backed data loading
-- [x] Send create, update, and move actions to the API (basic flows implemented; create/move test coverage remains)
-- [ ] Handle loading and error states in the UI (basic graceful fallback implemented; UI-level states can be improved)
-- [x] Add end-to-end tests for the persistent board flow (rename persistence test added; create/move tests to follow)
+- [x] Send create, update, and move actions to the API
+- [x] Handle loading and error states in the UI
+- [x] Add end-to-end tests for the persistent board flow
 
 ### Tests
 - [x] Verify the board loads from the backend on first render (frontend uses seeded data then merges backend response)
-- [x] Verify edits and card moves are persisted and reflected in the UI (rename/edit flows validated; move/create flows need E2E tests)
-- [ ] Verify the UI behaves correctly when the API fails
+- [x] Verify edits and card moves are persisted and reflected in the UI
+- [x] Verify the UI behaves correctly when the API fails
 
 ### Success criteria
 - The board remains available across refreshes or app restarts for the signed-in user
@@ -216,15 +217,15 @@ Allow the AI to understand the current board and optionally propose changes to i
 Provide a polished UI for chatting with the AI and let AI-driven updates refresh the board automatically.
 
 ### Checklist
-- [ ] Add a sidebar chat panel to the app shell
-- [ ] Send user prompts to the backend and show the AI responses in the UI
-- [ ] Apply AI-generated board updates and refresh the board automatically
-- [ ] Keep the experience simple and visually aligned with the existing design system
+- [x] Add a sidebar chat panel to the app shell
+- [x] Send user prompts to the backend and show the AI responses in the UI
+- [x] Apply AI-generated board updates and refresh the board automatically
+- [x] Keep the experience simple and visually aligned with the existing design system
 
 ### Tests
-- [ ] Verify chat messages render correctly
-- [ ] Verify AI-driven board updates are reflected in the UI
-- [ ] Verify the app remains usable when the AI response contains no board changes
+- [x] Verify chat messages render correctly
+- [x] Verify AI-driven board updates are reflected in the UI
+- [x] Verify the app remains usable when the AI response contains no board changes
 
 ### Success criteria
 - The user can chat with the AI from the app and see board updates when appropriate

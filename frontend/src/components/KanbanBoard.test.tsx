@@ -1,6 +1,19 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
+import { chatWithBoardAi, fetchBoard, saveBoard } from "@/lib/api";
+import { initialData } from "@/lib/kanban";
 import { KanbanBoard } from "@/components/KanbanBoard";
+
+vi.mock("@/lib/api", () => ({
+  chatWithBoardAi: vi.fn(),
+  fetchBoard: vi.fn(),
+  saveBoard: vi.fn(),
+}));
+
+const mockedFetchBoard = vi.mocked(fetchBoard);
+const mockedSaveBoard = vi.mocked(saveBoard);
+const mockedChatWithBoardAi = vi.mocked(chatWithBoardAi);
 
 const getFirstColumn = async () => {
   const column = await screen.findAllByTestId(/column-/i);
@@ -8,6 +21,12 @@ const getFirstColumn = async () => {
 };
 
 describe("KanbanBoard", () => {
+  beforeEach(() => {
+    mockedFetchBoard.mockResolvedValue(initialData);
+    mockedSaveBoard.mockImplementation(async (_userId, board) => board);
+    mockedChatWithBoardAi.mockReset();
+  });
+
   it("renders five columns", async () => {
     render(<KanbanBoard />);
     expect(await screen.findAllByTestId(/column-/i)).toHaveLength(5);
@@ -45,5 +64,74 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("shows an AI response without changing the board", async () => {
+    mockedChatWithBoardAi.mockResolvedValue({
+      reply: "The board has five columns.",
+      board: null,
+    });
+    render(<KanbanBoard />);
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/ask the ai to update the board/i),
+      "Summarize this board"
+    );
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+    expect(await screen.findByText("Summarize this board")).toBeInTheDocument();
+    expect(await screen.findByText("The board has five columns.")).toBeInTheDocument();
+  });
+
+  it("applies AI board updates", async () => {
+    mockedChatWithBoardAi.mockResolvedValue({
+      reply: "Added the card.",
+      board: {
+        columns: [
+          {
+            ...initialData.columns[0],
+            cardIds: [...initialData.columns[0].cardIds, "card-ai"],
+          },
+          ...initialData.columns.slice(1),
+        ],
+        cards: {
+          ...initialData.cards,
+          "card-ai": {
+            id: "card-ai",
+            title: "AI created card",
+            details: "Created from chat.",
+          },
+        },
+      },
+    });
+    render(<KanbanBoard />);
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/ask the ai to update the board/i),
+      "Create a card"
+    );
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("AI created card")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Added the card.")).toBeInTheDocument();
+  });
+
+  it("shows an AI error when the request fails", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockedChatWithBoardAi.mockRejectedValue(new Error("AI unavailable"));
+    render(<KanbanBoard />);
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/ask the ai to update the board/i),
+      "Create a card"
+    );
+    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+    expect(
+      await screen.findByText(/the ai request failed/i)
+    ).toBeInTheDocument();
+    consoleErrorSpy.mockRestore();
   });
 });

@@ -1,36 +1,49 @@
-# The Project Management MVP web app
+# Project Management MVP
 
-## Business Requirements
+## Current Product
 
-This project is building a Project Management App. Key features:
-- A user can sign in
-- When signed in, the user sees a Kanban board representing their project
-- The Kanban board has fixed columns that can be renamed
-- The cards on the Kanban board can be moved with drag and drop, and edited
-- There is an AI chat feature in a sidebar; the AI is able to create / edit / move one or more cards
+This repository contains a local Project Management MVP web app.
 
-## Limitations
+Implemented behavior:
+- A user signs in with hardcoded MVP credentials: `user` / `password`.
+- After sign-in, the user sees one Kanban board.
+- The Kanban board has fixed columns that can be renamed.
+- Cards can be created, deleted, and moved with drag and drop.
+- Board state is persisted in SQLite through the backend API.
+- An AI chat sidebar can answer board-aware questions and apply validated board updates.
 
-For the MVP, there will only be a user sign in (hardcoded to 'user' and 'password') but the database will support multiple users for future.
+## MVP Limitations
 
-For the MVP, there will only be 1 Kanban board per signed in user.
-
-For the MVP, this will run locally in a Podman container
+- Authentication is frontend-only and hardcoded for the MVP.
+- There is one board for the signed-in user.
+- The current SQLite implementation stores the board as JSON for simplicity.
+- `docs/database-schema.json` documents the future normalized multi-user schema.
+- The app is intended to run locally in a Podman container.
 
 ## Technical Decisions
 
-- NextJS frontend
-- Python FastAPI backend, including serving the static NextJS site at /
-- Everything packaged into a Podman container
-- Use "uv" as the package manager for python in the Docker container
-- Use OpenRouter for the AI calls. An OPENROUTER_API_KEY is in .env in the project root
+- Next.js frontend exported as a static site.
+- Python FastAPI backend serves the static Next.js site at `/`.
+- FastAPI exposes REST endpoints under `/api`.
+- Everything is packaged into a Podman-compatible container image.
+- Use `uv` as the Python package installer in the container.
+- Use OpenRouter for AI calls. `OPENROUTER_API_KEY` is read from `.env` or the runtime environment.
 - Use `openai/gpt-oss-120b` as the model
-- Use SQLLite local database for the database, creating a new db if it doesn't exist
-- Start and Stop server scripts for Mac, PC, Linux in scripts/
+- Use SQLite for local persistence, creating a database if it does not exist.
+- Start and stop scripts live in `scripts/`.
 
-## Starting Point
+## Key Files
 
-A working MVP of the frontend has been built and is already in frontend. This is not yet designed for the Podman setup. It's a pure frontend-only demo.
+- `README.md`: setup, run, test, and deployment instructions.
+- `docs/PLAN.md`: implementation history and current project plan.
+- `docs/database-schema.json`: proposed future normalized database schema.
+- `backend/app/main.py`: FastAPI app, static frontend serving, and API routes.
+- `backend/app/persistence.py`: SQLite persistence.
+- `backend/app/ai_client.py`: OpenRouter client.
+- `backend/app/board_ai.py`: board-aware AI prompt, structured response, and validation logic.
+- `frontend/src/components/KanbanBoard.tsx`: board state and workspace layout.
+- `frontend/src/components/AIChatSidebar.tsx`: AI chat UI.
+- `frontend/src/lib/api.ts`: frontend API wrappers.
 
 ## Color Scheme
 
@@ -42,8 +55,8 @@ A working MVP of the frontend has been built and is already in frontend. This is
 
 ## Coding standards
 
-1. Use latest versions of libraries and idiomatic approaches as of today
-2. Keep it simple - NEVER over-engineer, ALWAYS simplify, NO unnecessary defensive programming. No extra features - focus on simplicity.
+1. Use latest versions of libraries and idiomatic approaches as of today.
+2. Keep it simple. NEVER over-engineer, ALWAYS simplify, NO unnecessary defensive programming. No extra features unless explicitly requested.
 3. Be concise. Keep README minimal. IMPORTANT: no emojis ever
 4. When hitting issues, always identify root cause before trying a fix. Do not guess. Prove with evidence, then fix the root cause.
 

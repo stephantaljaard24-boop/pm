@@ -13,12 +13,21 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
-import { fetchBoard, saveBoard } from "@/lib/api";
+import { AIChatSidebar } from "@/components/AIChatSidebar";
+import {
+  chatWithBoardAi,
+  fetchBoard,
+  saveBoard,
+  type ChatMessagePayload,
+} from "@/lib/api";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([]);
+  const [chatError, setChatError] = useState("");
+  const [isSendingChat, setIsSendingChat] = useState(false);
 
   useEffect(() => {
     const loadBoard = async () => {
@@ -126,6 +135,32 @@ export const KanbanBoard = () => {
     });
   };
 
+  const handleSendChatMessage = async (message: string) => {
+    const nextHistory: ChatMessagePayload[] = [
+      ...chatMessages,
+      { role: "user", content: message },
+    ];
+    setChatMessages(nextHistory);
+    setChatError("");
+    setIsSendingChat(true);
+
+    try {
+      const response = await chatWithBoardAi("user", message, chatMessages);
+      if (response.board) {
+        setBoard(response.board);
+      }
+      setChatMessages([
+        ...nextHistory,
+        { role: "assistant", content: response.reply },
+      ]);
+    } catch (error) {
+      console.error(error);
+      setChatError("The AI request failed. Check the backend and try again.");
+    } finally {
+      setIsSendingChat(false);
+    }
+  };
+
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   return (
@@ -170,32 +205,41 @@ export const KanbanBoard = () => {
           </div>
         </header>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <section className="grid gap-6 lg:grid-cols-5">
-            {board.columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                cards={column.cardIds.map((cardId) => board.cards[cardId])}
-                onRename={handleRenameColumn}
-                onAddCard={handleAddCard}
-                onDeleteCard={handleDeleteCard}
-              />
-            ))}
-          </section>
-          <DragOverlay>
-            {activeCard ? (
-              <div className="w-[260px]">
-                <KanbanCardPreview card={activeCard} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <section className="grid gap-6 lg:grid-cols-5">
+              {board.columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                  onRename={handleRenameColumn}
+                  onAddCard={handleAddCard}
+                  onDeleteCard={handleDeleteCard}
+                />
+              ))}
+            </section>
+            <DragOverlay>
+              {activeCard ? (
+                <div className="w-[260px]">
+                  <KanbanCardPreview card={activeCard} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+
+          <AIChatSidebar
+            messages={chatMessages}
+            isSending={isSendingChat}
+            error={chatError}
+            onSend={handleSendChatMessage}
+          />
+        </div>
       </main>
     </div>
   );
