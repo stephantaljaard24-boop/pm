@@ -10,9 +10,9 @@ scenario and a recommended action for each.
 |---|----------|------|---------|
 | 1 | High — **Fixed** | Backend persistence | Every board request opens a redundant, never-explicitly-closed SQLite connection and re-runs schema DDL |
 | 2 | High — **Fixed** | Frontend state | Initial board fetch can silently overwrite in-flight local edits |
-| 3 | Medium | Frontend UX | Board save failures (PUT) are swallowed — UI shows unsaved changes as if persisted |
-| 4 | Medium | Dev workflow | No CORS config means `npm run dev` cannot talk to a locally running backend |
-| 5 | Medium | Repo hygiene | Default local SQLite file (`backend/pm.db`) is not gitignored |
+| 3 | Medium — **Fixed** | Frontend UX | Board save failures (PUT) are swallowed — UI shows unsaved changes as if persisted |
+| 4 | Medium — **Fixed** | Dev workflow | No CORS config means `npm run dev` cannot talk to a locally running backend |
+| 5 | Medium — **Fixed** | Repo hygiene | Default local SQLite file (`backend/pm.db`) is not gitignored |
 | 6 | Low | Backend | `check_endpoints.py` uses a stale import path and will fail to run |
 | 7 | Info | Security posture | API has no authorization — the frontend login is cosmetic only |
 
@@ -140,6 +140,12 @@ with no explanation.
 **Action:** surface persistence failures in the UI (banner/toast), matching
 the pattern already used for AI chat errors.
 
+**Fix applied:** added a `saveError` state, set whenever `persistBoard`'s
+`saveBoard` call throws and cleared on the next successful save. A red banner
+now renders below the board header (same style as `LoginForm`'s error
+message) whenever a save fails. Verified via `npm run test:unit` (12/12) and
+`npm run build`.
+
 ---
 
 ## 4. No CORS configuration — `npm run dev` can't reach the backend (Medium)
@@ -163,6 +169,12 @@ indication it's a CORS issue rather than a backend bug.
 local development, or explicitly document that `npm run dev` is frontend-UI
 iteration only and the full stack must be exercised via the Podman container.
 
+**Fix applied:** registered `CORSMiddleware` on the FastAPI app allowing
+`http://localhost:3000` and `http://127.0.0.1:3000` (the `next dev` origins
+used by this repo, including Playwright's `webServer`), all methods and
+headers. Verified via `python -m pytest backend/tests` (14/14) and the full
+Playwright e2e suite (4/4).
+
 ---
 
 ## 5. Default local SQLite file is not gitignored (Medium)
@@ -180,6 +192,9 @@ local board database (containing whatever board data happened to be saved)
 into a commit.
 
 **Action:** add `backend/pm.db` (or a general `*.db`) to `.gitignore`.
+
+**Fix applied:** added `backend/pm.db` and a general `*.db` rule to
+`.gitignore`. Verified with `git check-ignore -v backend/pm.db`.
 
 ---
 

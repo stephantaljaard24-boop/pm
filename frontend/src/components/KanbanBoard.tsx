@@ -28,6 +28,7 @@ export const KanbanBoard = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([]);
   const [chatError, setChatError] = useState("");
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const hasLocalChanges = useRef(false);
 
   useEffect(() => {
@@ -61,8 +62,10 @@ export const KanbanBoard = () => {
     hasLocalChanges.current = true;
     try {
       await saveBoard("user", nextBoard);
+      setSaveError("");
     } catch (error) {
       console.error(error);
+      setSaveError("Your last change could not be saved. Check the backend and try again.");
     }
   };
 
@@ -207,6 +210,12 @@ export const KanbanBoard = () => {
             ))}
           </div>
         </header>
+
+        {saveError ? (
+          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {saveError}
+          </p>
+        ) : null}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <DndContext

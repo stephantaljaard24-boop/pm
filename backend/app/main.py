@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 from app.ai_client import (
@@ -15,6 +16,13 @@ from app.persistence import get_board_data, save_board_data
 from app.schemas import AIBoardRequest, BoardPayload
 
 app = FastAPI(title="Project Management MVP Backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DEFAULT_FRONTEND_BUILD_DIR = (
     Path(__file__).resolve().parent.parent.parent / "frontend" / "out"
