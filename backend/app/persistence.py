@@ -16,28 +16,27 @@ def get_connection() -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS boards (
+            user_id TEXT PRIMARY KEY,
+            board_json TEXT NOT NULL
+        )
+        """
+    )
     return connection
 
 
-def initialize_database() -> None:
-    with get_connection() as connection:
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS boards (
-                user_id TEXT PRIMARY KEY,
-                board_json TEXT NOT NULL
-            )
-            """
-        )
-
-
 def get_board_data(user_id: str) -> dict[str, Any]:
-    initialize_database()
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT board_json FROM boards WHERE user_id = ?",
-            (user_id,),
-        ).fetchone()
+    connection = get_connection()
+    try:
+        with connection:
+            row = connection.execute(
+                "SELECT board_json FROM boards WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+    finally:
+        connection.close()
 
     if row is None:
         return default_board_payload()
@@ -46,13 +45,16 @@ def get_board_data(user_id: str) -> dict[str, Any]:
 
 
 def save_board_data(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    initialize_database()
     board_json = json.dumps(payload)
-    with get_connection() as connection:
-        connection.execute(
-            "INSERT INTO boards(user_id, board_json) VALUES(?, ?) ON CONFLICT(user_id) DO UPDATE SET board_json = excluded.board_json",
-            (user_id, board_json),
-        )
+    connection = get_connection()
+    try:
+        with connection:
+            connection.execute(
+                "INSERT INTO boards(user_id, board_json) VALUES(?, ?) ON CONFLICT(user_id) DO UPDATE SET board_json = excluded.board_json",
+                (user_id, board_json),
+            )
+    finally:
+        connection.close()
 
     return payload
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -28,15 +28,17 @@ export const KanbanBoard = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([]);
   const [chatError, setChatError] = useState("");
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const hasLocalChanges = useRef(false);
 
   useEffect(() => {
     const loadBoard = async () => {
       try {
         const fetchedBoard = await fetchBoard("user");
-        setBoard(fetchedBoard);
+        if (!hasLocalChanges.current) {
+          setBoard(fetchedBoard);
+        }
       } catch (error) {
         console.error(error);
-        setBoard(initialData);
       }
     };
 
@@ -56,6 +58,7 @@ export const KanbanBoard = () => {
   };
 
   const persistBoard = async (nextBoard: BoardData) => {
+    hasLocalChanges.current = true;
     try {
       await saveBoard("user", nextBoard);
     } catch (error) {
