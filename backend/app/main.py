@@ -28,6 +28,11 @@ DEFAULT_FRONTEND_BUILD_DIR = (
     Path(__file__).resolve().parent.parent.parent / "frontend" / "out"
 )
 
+FRONTEND_UNAVAILABLE_HTML = (
+    "<html><body><h1>Project Management MVP</h1>"
+    "<p>The frontend build is not available yet.</p></body></html>"
+)
+
 
 def get_frontend_build_dir() -> Path:
     return Path(os.getenv("FRONTEND_BUILD_DIR", str(DEFAULT_FRONTEND_BUILD_DIR))).resolve()
@@ -70,9 +75,7 @@ def chat_with_board_ai(user_id: str, payload: AIBoardRequest) -> JSONResponse:
         ai_response = ask_board_ai(payload.message, board, payload.history)
     except OpenRouterConfigError as exc:
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=500)
-    except OpenRouterRequestError as exc:
-        return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
-    except AIResponseValidationError as exc:
+    except (OpenRouterRequestError, AIResponseValidationError) as exc:
         return JSONResponse({"status": "error", "message": str(exc)}, status_code=502)
 
     updated_board = None
@@ -85,13 +88,7 @@ def chat_with_board_ai(user_id: str, payload: AIBoardRequest) -> JSONResponse:
 
 @app.get("/", response_model=None)
 def read_root() -> FileResponse | HTMLResponse:
-    index_path = get_frontend_build_dir() / "index.html"
-    if index_path.is_file():
-        return FileResponse(index_path)
-
-    return HTMLResponse(
-        "<html><body><h1>Project Management MVP</h1><p>The frontend build is not available yet.</p></body></html>"
-    )
+    return serve_frontend("")
 
 
 @app.get("/{full_path:path}", response_model=None)
@@ -114,6 +111,4 @@ def serve_frontend(full_path: str) -> FileResponse | HTMLResponse:
     if index_path.is_file():
         return FileResponse(index_path)
 
-    return HTMLResponse(
-        "<html><body><h1>Project Management MVP</h1><p>The frontend build is not available yet.</p></body></html>"
-    )
+    return HTMLResponse(FRONTEND_UNAVAILABLE_HTML)

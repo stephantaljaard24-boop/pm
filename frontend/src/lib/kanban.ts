@@ -81,6 +81,15 @@ const findColumnId = (columns: Column[], id: string) => {
   return columns.find((column) => column.cardIds.includes(id))?.id;
 };
 
+const replaceCardIds = (
+  columns: Column[],
+  columnId: string,
+  cardIds: string[]
+): Column[] =>
+  columns.map((column) =>
+    column.id === columnId ? { ...column, cardIds } : column
+  );
+
 export const moveCard = (
   columns: Column[],
   activeId: string,
@@ -108,11 +117,7 @@ export const moveCard = (
         (cardId) => cardId !== activeId
       );
       nextCardIds.push(activeId);
-      return columns.map((column) =>
-        column.id === activeColumnId
-          ? { ...column, cardIds: nextCardIds }
-          : column
-      );
+      return replaceCardIds(columns, activeColumnId, nextCardIds);
     }
 
     const oldIndex = activeColumn.cardIds.indexOf(activeId);
@@ -126,11 +131,7 @@ export const moveCard = (
     nextCardIds.splice(oldIndex, 1);
     nextCardIds.splice(newIndex, 0, activeId);
 
-    return columns.map((column) =>
-      column.id === activeColumnId
-        ? { ...column, cardIds: nextCardIds }
-        : column
-    );
+    return replaceCardIds(columns, activeColumnId, nextCardIds);
   }
 
   const activeIndex = activeColumn.cardIds.indexOf(activeId);

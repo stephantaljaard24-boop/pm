@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { LoginForm } from "@/components/LoginForm";
 
@@ -22,15 +22,10 @@ export default function Home() {
     setAuthError("The credentials you entered are not valid.");
   };
 
-  const authState = useMemo(
-    () => ({ isAuthenticated, authError }),
-    [isAuthenticated, authError]
-  );
-
-  if (!authState.isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--surface)] px-6 py-16">
-        <LoginForm onSubmit={handleLogin} error={authState.authError} />
+        <LoginForm onSubmit={handleLogin} error={authError} />
       </main>
     );
   }
